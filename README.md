@@ -4,5 +4,5 @@ En la primera carpeta "Datos" se encuentran 34 archivos de texto generados por e
     2.-Distribución de Boltzmann o Análisis del Potencial de la trampa. 
 En el caso de Boltzman, hay uno que grafica los potenciales y otro que, principalmente obtiene el vector de coneficientes k (de la rigidez), pero que también se da la posibilidad de graficarlos todos si se desea.
 
-LFM Josué Hernández Torres 
-M en C. Doralycia Carranza
+-LFM Josué Hernández Torres 
+-M en C. Doralycia Carranza
