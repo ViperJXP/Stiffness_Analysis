@@ -20,18 +20,22 @@ por lo tanto, obtenemos: "k_x" y "k_y" y guarda todos estos datos en un vector d
 """
 import numpy as np
 import matplotlib.pyplot as plt
-
+import pandas as pd
 #Constantes físicas y número de bins:
 k_B=1.380649e-23
 T=295.15
 C=k_B*T
 bins=20
+N=4             #Número de experimentos para las k's promedio
 #Se crean los vectores que van a contenter a los n valores de stiffness en x e y
 kx_Boltzmann=[]
 ky_Boltzmann=[]
 kx_Equipartición=[]                  
 ky_Equipartición=[]
-
+Fx_B=[]
+Fy_B=[]
+Fx_Eq=[]
+Fy_Eq=[]
 
 #Definimos una función que grafique, por si se necesita en algún momento, sólo descomentar la línea 163
 def graficar(px,py,x,y,Particion_X,Particion_Y,U_x,U_y):
@@ -80,10 +84,15 @@ def filtro(Frecuencias, Particion):
     for i in range(len(a)):
         Particion.pop(a[i])
     return 0;
-
+def fuerzas(k,alpha):
+    #Siguiendo la relación 
+    #F_{\alpha}=-k_{\alpha}*\alpha, tomaremos \alpha=mean(\alpha)
+    F=-k*np.mean(alpha)
+    return F
 
 import glob   #Se importa la librería glob, para poder importar los archivos *.txt
-lista_archivos=glob.glob('C:/Users/PC/Desktop/Optical Tweezers/TweezVip/Datos/*.txt')  #Cargamos todos los archivos *.txt a la variable "lista_archivos", modificar el path si es necesario
+lista_archivos=glob.glob('C:/Users/PC/Desktop/Datos/Datos Limpios 113/*.txt')  #Cargamos todos los archivos *.txt a la variable "lista_archivos", modificar el path si es necesario
+#El path debe estar escrito con '/' y no con '\', si se copia del directorio, la copia sale como '\'
 for na in lista_archivos:       #Recorremos archivo por archivo con el nombre 'na' (nombre de archivo)
     #Se lee el archivo *.txt y splitea
     x,y=np.loadtxt(na,usecols=(1,3),unpack=True, skiprows=1)    #El archivo de datos contiene 6 columnas, las columnas 2 y 4 son las de x e y, respectivamente, aquí la cuenta se inicia en 0, modificar 'usecols' si es necesario
@@ -97,6 +106,8 @@ for na in lista_archivos:       #Recorremos archivo por archivo con el nombre 'n
     sigma_y=np.var(y)
     kx_Equipartición.append(C/sigma_x)               #Se calculan las rigideces por el método de Equipartición
     ky_Equipartición.append(C/sigma_y)
+    Fx_Eq.append(fuerzas(C/sigma_x,x))
+    Fy_Eq.append(fuerzas(C/sigma_y,y))
     #Se convierten en listas:
     x=list(x)
     y=list(y)
@@ -179,6 +190,20 @@ for na in lista_archivos:       #Recorremos archivo por archivo con el nombre 'n
     #Se crean los vectores para esos valores del polinomio evaluado en los valores de posición
     kx_Boltzmann.append(2*px[0])
     ky_Boltzmann.append(2*py[0])
-    
+    Fx_B.append(fuerzas(2*px[0],x))
+    Fy_B.append(fuerzas(2*py[0],y))
+    #graficar(px,py,x,y,Particion_X,Particion_Y,U_x,U_y)
+#Sacamos el promedio de las k's cada N experimentos
+kx_B_mean=  [sum(kx_Boltzmann[i:i+N])       / N for i in range(0, len(kx_Boltzmann),     N)]
+kx_Eq_mean= [sum(kx_Equipartición[i:i+N])   / N for i in range(0, len(kx_Equipartición), N)]
+ky_B_mean=  [sum(ky_Boltzmann[i:i+N])       / N for i in range(0, len(ky_Boltzmann),     N)]
+ky_Eq_mean= [sum(ky_Equipartición[i:i+N])   / N for i in range(0, len(ky_Equipartición), N)]
+#Ahora escribimos un archivo excel con las constantes como columnas y con dos páginas, la primera todas las stiffness y la segunda los promedios
+df=pd.DataFrame({"kx_B":kx_Boltzmann,"ky_B":ky_Boltzmann,"kx_Eq":kx_Equipartición,"ky_Eq":ky_Equipartición})
+df_2=pd.DataFrame({"kx_B_Mean":kx_B_mean,"ky_B_Mean":ky_B_mean,"kx_Eq_Mean":kx_Eq_mean,"ky_Eq_Mean":ky_Eq_mean})
+with pd.ExcelWriter("Stiffness_Analysis.xlsx") as writer:
+    df.to_excel(writer, sheet_name="Stiffness_Completas", index=False)  # Primera hoja
+    df_2.to_excel(writer, sheet_name="Stiffness_Promedios", index=False)  # Segunda hoja
+
     #graficar(px,py,x,y,Particion_X,Particion_Y,U_x,U_y)
 
