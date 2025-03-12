@@ -25,7 +25,7 @@ import pandas as pd
 k_B=1.380649e-23
 T=295.15
 C=k_B*T
-bins=20
+bins=30
 N=4             #Número de experimentos para las k's promedio
 #Se crean los vectores que van a contenter a los n valores de stiffness en x e y
 kx_Boltzmann=[]
@@ -38,7 +38,7 @@ Fx_Eq=[]
 Fy_Eq=[]
 
 #Definimos una función que grafique, por si se necesita en algún momento, sólo descomentar la línea 163
-def graficar(px,py,x,y,Particion_X,Particion_Y,U_x,U_y):
+def graficar_potencial(px,py,x,y,Particion_X,Particion_Y,U_x,U_y):
     x_min = -px[1] / (2 * px[0])
     y_min = -py[1] / (2 * py[0])
     #Se modifica la Partición con los nuevos valores
@@ -69,7 +69,34 @@ def graficar(px,py,x,y,Particion_X,Particion_Y,U_x,U_y):
     ax2.set(xlabel='Posición ($10^{-8}m$)', ylabel='$U_y(k_BT)$')
     ax1.legend(loc='best')
     ax2.legend(loc='best')
-
+def graficar_posiciones(x,y):
+    tx=np.linspace(0, len(x),len(x))
+    ty=np.linspace(0, len(y),len(y))
+    fig, (g1, g2) = plt.subplots(2, 1)
+    fig.suptitle('Posiciones en el tiempo para $x$ y $y$')
+    g1.vlines(tx, 0, x, color='r', alpha=0.6, label='X')  # Rojo para X
+    g2.vlines(ty, 0, y, color='k', alpha=0.6, label='Y')  # Negro para Y
+    g1.set_title('Posiciones $x$')
+    g2.set_title('Posiciones $y$')
+    g1.set(xlabel='$t$ (a.u.)', ylabel='$x$')
+    g2.set(xlabel='$t$', ylabel='$y$')
+    g1.legend(loc='best')
+    g2.legend(loc='best')
+    g1.grid(True, linestyle="--", alpha=0.5) 
+    g2.grid(True, linestyle="--", alpha=0.5)
+def graficar_distribucion(Particion_X, X_Frec, Particion_Y, Y_Frec):
+    fig, (g1, g2) = plt.subplots(2, 1)
+    fig.suptitle('Distribución de posiciones $x$ y $y$')
+    g1.plot(Particion_X , X_Frec,marker='o', linestyle='-',color='r', alpha=0.6, label='X')  # Rojo para X
+    g2.plot(Particion_Y , Y_Frec,marker='o', linestyle='-', color='k', alpha=0.6, label='Y')  # Negro para Y
+    g1.set_title('Posiciones $x$')
+    g2.set_title('Posiciones $y$')
+    g1.set(xlabel='$x$', ylabel='$count$')
+    g2.set(xlabel='$y$', ylabel='$count$')
+    g1.legend(loc='best')
+    g2.legend(loc='best')
+    g1.grid(True, linestyle="--", alpha=0.5) 
+    g2.grid(True, linestyle="--", alpha=0.5)
 def filtro(Frecuencias, Particion):
     a=[]
     for i in range(len(Frecuencias)):
@@ -91,13 +118,12 @@ def fuerzas(k,alpha):
     return F
 
 import glob   #Se importa la librería glob, para poder importar los archivos *.txt
-lista_archivos=glob.glob('C:/Users/PC/Desktop/Datos/Datos Limpios 113/*.txt')  #Cargamos todos los archivos *.txt a la variable "lista_archivos", modificar el path si es necesario
+lista_archivos=glob.glob('C:/Users/PC/OneDrive/Desktop/Datos 11032025/20pwr/*.txt')  #Cargamos todos los archivos *.txt a la variable "lista_archivos", modificar el path si es necesario
 #El path debe estar escrito con '/' y no con '\', si se copia del directorio, la copia sale como '\'
 for na in lista_archivos:       #Recorremos archivo por archivo con el nombre 'na' (nombre de archivo)
     #Se lee el archivo *.txt y splitea
     x,y=np.loadtxt(na,usecols=(1,3),unpack=True, skiprows=1)    #El archivo de datos contiene 6 columnas, las columnas 2 y 4 son las de x e y, respectivamente, aquí la cuenta se inicia en 0, modificar 'usecols' si es necesario
     x=list(x);y=list(y)
-    #x.pop(0);y.pop(0)
     x=np.array(x);y=np.array(y)
     #El factor de conversión por trabajar en micras:
     x*=1e-6
@@ -111,6 +137,11 @@ for na in lista_archivos:       #Recorremos archivo por archivo con el nombre 'n
     #Se convierten en listas:
     x=list(x)
     y=list(y)
+    """
+    #############################################Graficar posiciones vs t
+    """
+    #graficar_posiciones(x, y)
+    
     #Se ordenan:
     x.sort()
     y.sort() 
@@ -167,7 +198,10 @@ for na in lista_archivos:       #Recorremos archivo por archivo con el nombre 'n
                 suma+=yfrec[j]
         Y_Frec.append(suma);
         
-        
+    """
+    ############################ Graficar distribución de posiciones
+    """
+    #graficar_distribucion(Particion_X, X_Frec, Particion_Y, Y_Frec)
         
 
     # Ahora quitamos todos los valores de frecuencias iguales a 0 con sus respectivos valores en la partición:
@@ -192,7 +226,7 @@ for na in lista_archivos:       #Recorremos archivo por archivo con el nombre 'n
     ky_Boltzmann.append(2*py[0])
     Fx_B.append(fuerzas(2*px[0],x))
     Fy_B.append(fuerzas(2*py[0],y))
-    #graficar(px,py,x,y,Particion_X,Particion_Y,U_x,U_y)
+    #graficar_potencial(px,py,x,y,Particion_X,Particion_Y,U_x,U_y)
 #Sacamos el promedio de las k's cada N experimentos
 kx_B_mean=  [sum(kx_Boltzmann[i:i+N])       / N for i in range(0, len(kx_Boltzmann),     N)]
 kx_Eq_mean= [sum(kx_Equipartición[i:i+N])   / N for i in range(0, len(kx_Equipartición), N)]
@@ -204,6 +238,3 @@ df_2=pd.DataFrame({"kx_B_Mean":kx_B_mean,"ky_B_Mean":ky_B_mean,"kx_Eq_Mean":kx_E
 with pd.ExcelWriter("Stiffness_Analysis.xlsx") as writer:
     df.to_excel(writer, sheet_name="Stiffness_Completas", index=False)  # Primera hoja
     df_2.to_excel(writer, sheet_name="Stiffness_Promedios", index=False)  # Segunda hoja
-
-    #graficar(px,py,x,y,Particion_X,Particion_Y,U_x,U_y)
-
