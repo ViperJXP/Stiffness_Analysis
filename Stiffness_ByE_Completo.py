@@ -22,34 +22,50 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
+from tkinter import Tk, filedialog
+from pathlib import Path
+
+# Desactivar el modo interactivo de matplotlib
 plt.ioff()
-carpeta_posiciones="Posiciones"
-carpeta_distribuciones="Distribuciones"
-carpeta_potenciales="Potenciales"
-if not os.path.exists(carpeta_posiciones):
-    os.makedirs(carpeta_posiciones)
-if not os.path.exists(carpeta_distribuciones):
-    os.makedirs(carpeta_distribuciones)
-if not os.path.exists(carpeta_potenciales):
-    os.makedirs(carpeta_potenciales)
 
-#Constantes físicas y número de bins:
-k_B=1.380649e-23
-T=295.15
-C=k_B*T
-bins=30
-N=4             #Número de experimentos para las k's promedio
-#Se crean los vectores que van a contenter a los n valores de stiffness en x e y
-kx_Boltzmann=[]
-ky_Boltzmann=[]
-kx_Equipartición=[]                  
-ky_Equipartición=[]
-Fx_B=[]
-Fy_B=[]
-Fx_Eq=[]
-Fy_Eq=[]
+# Crear una ventana de tkinter para seleccionar la carpeta de datos
+root = Tk()
+root.withdraw()  # Ocultar la ventana principal
+ruta_datos = filedialog.askdirectory(title="Selecciona la carpeta de datos")
 
-#Definimos una función que grafique, por si se necesita en algún momento, sólo descomentar la línea 163
+# Verificar que se seleccionó una carpeta
+if not ruta_datos:
+    print("No se seleccionó ninguna carpeta.")
+    exit()
+
+# Convertir la ruta a un objeto Path
+ruta_datos = Path(ruta_datos)
+
+# Crear carpetas de salida dentro de la carpeta de datos seleccionada
+carpeta_posiciones = ruta_datos / "Posiciones"
+carpeta_distribuciones = ruta_datos / "Distribuciones"
+carpeta_potenciales = ruta_datos / "Potenciales"
+for carpeta in [carpeta_posiciones, carpeta_distribuciones, carpeta_potenciales]:
+    carpeta.mkdir(exist_ok=True)
+
+# Constantes físicas y número de bins:
+k_B = 1.380649e-23
+T = 295.15
+C = k_B * T
+bins = 30
+N = 4  # Número de experimentos para las k's promedio
+
+# Vectores para almacenar resultados
+kx_Boltzmann = []
+ky_Boltzmann = []
+kx_Equiparticion = []
+ky_Equiparticion = []
+Fx_B = []
+Fy_B = []
+Fx_Eq = []
+Fy_Eq = []
+
+# Funciones auxiliares
 def graficar_potencial(px, py, x, y, Particion_X, Particion_Y, U_x, U_y, ruta_guardado=None):
     x_min = -px[1] / (2 * px[0])
     y_min = -py[1] / (2 * py[0])
@@ -89,6 +105,7 @@ def graficar_potencial(px, py, x, y, Particion_X, Particion_Y, U_x, U_y, ruta_gu
         plt.close()  # Cerrar la figura para liberar memoria
     else:
         plt.show()  # Mostrar la figura si no se proporciona una ruta de guardado
+
 def graficar_posiciones(x, y, ruta_guardado=None):
     tx = np.linspace(0, len(x), len(x))
     ty = np.linspace(0, len(y), len(y))
@@ -112,6 +129,7 @@ def graficar_posiciones(x, y, ruta_guardado=None):
         plt.close()  # Cerrar la figura para liberar memoria
     else:
         plt.show()  # Mostrar la figura si no se proporciona una ruta de guardado
+
 def graficar_distribucion(Particion_X, X_Frec, Particion_Y, Y_Frec, ruta_guardado=None):
     # Crear la figura y las subgráficas
     fig, (g1, g2) = plt.subplots(2, 1)
@@ -140,155 +158,102 @@ def graficar_distribucion(Particion_X, X_Frec, Particion_Y, Y_Frec, ruta_guardad
         plt.close()  # Cerrar la figura para liberar memoria
     else:
         plt.show()  # Mostrar la figura si no se proporciona una ruta de guardado
+
 def filtro(Frecuencias, Particion):
-    a=[]
-    for i in range(len(Frecuencias)):
-        if Frecuencias[i]==0.0:
-                a.append(i)
-    while True:
-        try:
-            Frecuencias.remove(0)
-        except ValueError:
-            break
-    a.sort(reverse=True)
-    for i in range(len(a)):
-        Particion.pop(a[i])
-    return 0;
-def fuerzas(k,alpha):
-    #Siguiendo la relación 
-    #F_{\alpha}=-k_{\alpha}*\alpha, tomaremos \alpha=mean(\alpha)
-    F=-k*np.mean(alpha)
+    a = [i for i, f in enumerate(Frecuencias) if f == 0.0]
+    for i in reversed(a):
+        Frecuencias.pop(i)
+        Particion.pop(i)
+    return Frecuencias, Particion
+
+def fuerzas(k, alpha):
+    # Siguiendo la relación F_{\alpha}=-k_{\alpha}*\alpha, tomaremos \alpha=mean(\alpha)
+    F = -k * np.mean(alpha)
     return F
 
-import glob   #Se importa la librería glob, para poder importar los archivos *.txt
-lista_archivos=glob.glob('C:/Users/PC/OneDrive/Desktop/Datos 11032025/50pwr/*.txt')  #Cargamos todos los archivos *.txt a la variable "lista_archivos", modificar el path si es necesario
-#El path debe estar escrito con '/' y no con '\', si se copia del directorio, la copia sale como '\'
-for na in lista_archivos:       #Recorremos archivo por archivo con el nombre 'na' (nombre de archivo)
- # Extraer el nombre del archivo sin la ruta ni la extensión
-    nombre_archivo = os.path.splitext(os.path.basename(na))[0]
-    #Se lee el archivo *.txt y splitea
-    x,y=np.loadtxt(na,usecols=(1,3),unpack=True, skiprows=1)    #El archivo de datos contiene 6 columnas, las columnas 2 y 4 son las de x e y, respectivamente, aquí la cuenta se inicia en 0, modificar 'usecols' si es necesario
-    x=list(x);y=list(y)
-    x=np.array(x);y=np.array(y)
-    #El factor de conversión por trabajar en micras:
-    x*=1e-6
-    y*=1e-6
-    sigma_x=np.var(x)                   #Se calculan las varianzas de x y y
-    sigma_y=np.var(y)
-    kx_Equipartición.append(C/sigma_x)               #Se calculan las rigideces por el método de Equipartición
-    ky_Equipartición.append(C/sigma_y)
-    Fx_Eq.append(fuerzas(C/sigma_x,x))
-    Fy_Eq.append(fuerzas(C/sigma_y,y))
-    #Se convierten en listas:
-    x=list(x)
-    y=list(y)
-    """
-    #############################################Graficar posiciones vs t
-    """
+# Obtener la lista de archivos en la carpeta seleccionada
+lista_archivos = list(ruta_datos.glob("*.txt"))
+
+# Procesar cada archivo
+for na in lista_archivos:
+    # Extraer el nombre del archivo sin la ruta ni la extensión
+    nombre_archivo = na.stem
+
+    # Leer el archivo *.txt
+    try:
+        x, y = np.loadtxt(na, usecols=(1, 3), unpack=True, skiprows=1)
+    except Exception as e:
+        print(f"Error al leer el archivo {na}: {e}")
+        continue
+
+    # Convertir a metros
+    x = x * 1e-6
+    y = y * 1e-6
+
+    # Calcular varianzas y rigideces por el método de Equipartición
+    sigma_x = np.var(x)
+    sigma_y = np.var(y)
+    kx_Equiparticion.append(C / sigma_x)
+    ky_Equiparticion.append(C / sigma_y)
+    Fx_Eq.append(fuerzas(C / sigma_x, x))
+    Fy_Eq.append(fuerzas(C / sigma_y, y))
+
     # Graficar y guardar posiciones
-    ruta_posiciones = os.path.join(carpeta_posiciones, f"posiciones_{nombre_archivo}.jpg")
+    ruta_posiciones = carpeta_posiciones / f"posiciones_{nombre_archivo}.jpg"
     graficar_posiciones(x, y, ruta_posiciones)
-    
-    #Se ordenan:
+
+    # Ordenar los datos
     x.sort()
-    y.sort() 
-    
-    
-    
-    #Se obtienen los valores máximos y mínimos
-    xmax=max(x);xmin=min(x);
-    ymax=max(y);ymin=min(y);
-    #Se crean los dx y dy           Desde aquí debería ser la condición
-    dx=(xmax-xmin)/bins
-    dy=(ymax-ymin)/bins
-    
-    
-    
-    #Se crean los vectores para los valores de la nueva partición
+    y.sort()
+
+    # Crear la partición para los histogramas
+    xmin, xmax = min(x), max(x)
+    ymin, ymax = min(y), max(y)
+    dx = (xmax - xmin) / bins
+    dy = (ymax - ymin) / bins
     Particion_X = [xmin + i * dx for i in range(bins + 1)]
-    Particion_Y = [ymin + i * dy for i in range(bins+1)]
-    
-    
-    
-    #Estos son los valores (sin repetir) de x y y, nos van a servir para el conteo de frecuencias
-    xrepres=list(set(x))
-    xrepres.sort()
-    yrepres=list(set(y))
-    yrepres.sort()
-    #Se crean los vectores para los valores de las frecuencias en la lista original y la de la nueva partición
-    xfrec=[]
-    yfrec=[]
-    X_Frec=[]
-    Y_Frec=[]
-    
-    #Determinamos los valores de x_frecuencias y y_frecuencias de toda la lista
-    for i in range(len(xrepres)):
-        xfrec.append(x.count(xrepres[i]))
-    for i in range(len(yrepres)):
-        yfrec.append(y.count(yrepres[i]))
-    
+    Particion_Y = [ymin + i * dy for i in range(bins + 1)]
 
-    
-    
-    #Ahora calculamos sus frecuencias con los acumulados anteriores      #Se debe cambiar el intervalo
-    for i in range(bins+1):
-        suma=0;     #Iniciamos suma
-        for j in range(len(xfrec)):
-            if Particion_X[i]-dx/2<xrepres[j]<=Particion_X[i]+dx/2: #Imponemos la condición del intervalo
-                suma+=xfrec[j]
-        X_Frec.append(suma);
-    #Para Y
-    for i in range(bins+1):
-        suma=0;
-        for j in range(len(yfrec)):
-            if Particion_Y[i]-dy/2<yrepres[j]<=Particion_Y[i]+dy/2:
-                suma+=yfrec[j]
-        Y_Frec.append(suma);
-        
-    """
-    ############################ Graficar distribución de posiciones
-    """
-    # Crear la ruta de guardado
-    ruta_guardado = os.path.join(carpeta_distribuciones, f"distribucion_posiciones_{nombre_archivo}.jpg")
-    graficar_distribucion(Particion_X, X_Frec, Particion_Y, Y_Frec, ruta_guardado)   
+    # Calcular frecuencias
+    X_Frec = [sum((Particion_X[i] - dx / 2 < x) & (x <= Particion_X[i] + dx / 2)) for i in range(bins + 1)]
+    Y_Frec = [sum((Particion_Y[i] - dy / 2 < y) & (y <= Particion_Y[i] + dy / 2)) for i in range(bins + 1)]
 
-    # Ahora quitamos todos los valores de frecuencias iguales a 0 con sus respectivos valores en la partición:
-    #Para X:
-    filtro(X_Frec,Particion_X)
-    #Para Y:
-    filtro(Y_Frec,Particion_Y)
-        
-        
-    #Se crean los vectores para los valores del potencial en x y en y
-    U_x=[]
-    U_y=[]
-    #Se calculan estos valores de potencial de acuerdo a la ecuación:
-    #   U(\alpha)=-k_BTln(\rho(\alpha))     , con \alpha=x,y y \rho= Función de Densidad de Probabilidad (PDF)   
+    # Graficar y guardar distribución de posiciones
+    ruta_distribuciones = carpeta_distribuciones / f"distribucion_posiciones_{nombre_archivo}.jpg"
+    graficar_distribucion(Particion_X, X_Frec, Particion_Y, Y_Frec, ruta_distribuciones)
+
+    # Filtrar frecuencias iguales a 0
+    X_Frec, Particion_X = filtro(X_Frec, Particion_X)
+    Y_Frec, Particion_Y = filtro(Y_Frec, Particion_Y)
+
+    # Calcular potenciales
     U_x = [-k_B * T * np.log(f) for f in X_Frec]
     U_y = [-k_B * T * np.log(f) for f in Y_Frec]
-    #Se realiza el ajuste a las parábolas abiertas hacia arriba que resulta de U(\alpha)vs\alpha es decir, potencial en función de posición
-    px=np.polyfit(Particion_X,U_x,2)    #Aquí se ajusta un polinomio de grado 2, con p=a*x^2+b*x+c, donde p[0]=a; p[1]=b; p[2]=c
-    py=np.polyfit(Particion_Y,U_y,2)
-    #Se crean los vectores para esos valores del polinomio evaluado en los valores de posición
-    kx_Boltzmann.append(2*px[0])
-    ky_Boltzmann.append(2*py[0])
-    Fx_B.append(fuerzas(2*px[0],x))
-    Fy_B.append(fuerzas(2*py[0],y))
+
+    # Ajustar parábolas y calcular rigideces por el método de Boltzmann
+    px = np.polyfit(Particion_X, U_x, 2)
+    py = np.polyfit(Particion_Y, U_y, 2)
+    kx_Boltzmann.append(2 * px[0])
+    ky_Boltzmann.append(2 * py[0])
+    Fx_B.append(fuerzas(2 * px[0], x))
+    Fy_B.append(fuerzas(2 * py[0], y))
+
     # Graficar y guardar potenciales
-    ruta_potenciales = os.path.join(carpeta_potenciales, f"potenciales_{nombre_archivo}.jpg")
+    ruta_potenciales = carpeta_potenciales / f"potenciales_{nombre_archivo}.jpg"
     graficar_potencial(px, py, x, y, Particion_X, Particion_Y, U_x, U_y, ruta_potenciales)
-#Sacamos el promedio de las k's cada N experimentos
-kx_B_mean=  [sum(kx_Boltzmann[i:i+N])       / N for i in range(0, len(kx_Boltzmann),     N)]
-kx_Eq_mean= [sum(kx_Equipartición[i:i+N])   / N for i in range(0, len(kx_Equipartición), N)]
-ky_B_mean=  [sum(ky_Boltzmann[i:i+N])       / N for i in range(0, len(ky_Boltzmann),     N)]
-ky_Eq_mean= [sum(ky_Equipartición[i:i+N])   / N for i in range(0, len(ky_Equipartición), N)]
-#Ahora escribimos un archivo excel con las constantes como columnas y con dos páginas, la primera todas las stiffness y la segunda los promedios
-df=pd.DataFrame({"kx_B":kx_Boltzmann,"ky_B":ky_Boltzmann,"kx_Eq":kx_Equipartición,"ky_Eq":ky_Equipartición})
-df_2=pd.DataFrame({"kx_B_Mean":kx_B_mean,"ky_B_Mean":ky_B_mean,"kx_Eq_Mean":kx_Eq_mean,"ky_Eq_Mean":ky_Eq_mean})
-with pd.ExcelWriter("Stiffness_Analysis.xlsx") as writer:
-    df.to_excel(writer, sheet_name="Stiffness_Completas", index=False)  # Primera hoja
-    df_2.to_excel(writer, sheet_name="Stiffness_Promedios", index=False)  # Segunda hoja
+
+# Calcular promedios de las k's cada N experimentos
+kx_B_mean = [sum(kx_Boltzmann[i:i + N]) / N for i in range(0, len(kx_Boltzmann), N)]
+ky_B_mean = [sum(ky_Boltzmann[i:i + N]) / N for i in range(0, len(ky_Boltzmann), N)]
+kx_Eq_mean = [sum(kx_Equiparticion[i:i + N]) / N for i in range(0, len(kx_Equiparticion), N)]
+ky_Eq_mean = [sum(ky_Equiparticion[i:i + N]) / N for i in range(0, len(ky_Equiparticion), N)]
+
+# Guardar resultados en un archivo Excel
+ruta_excel = ruta_datos / "Stiffness_Analysis.xlsx"
+with pd.ExcelWriter(ruta_excel) as writer:
+    df = pd.DataFrame({"kx_B": kx_Boltzmann, "ky_B": ky_Boltzmann, "kx_Eq": kx_Equiparticion, "ky_Eq": ky_Equiparticion})
+    df_2 = pd.DataFrame({"kx_B_Mean": kx_B_mean, "ky_B_Mean": ky_B_mean, "kx_Eq_Mean": kx_Eq_mean, "ky_Eq_Mean": ky_Eq_mean})
+    df.to_excel(writer, sheet_name="Stiffness_Completas", index=False)
+    df_2.to_excel(writer, sheet_name="Stiffness_Promedios", index=False)
+
 print("¡Todas las imágenes han sido generadas y guardadas con éxito!")
-with pd.ExcelWriter("Stiffness_Analysis.xlsx") as writer:
-    df.to_excel(writer, sheet_name="Stiffness_Completas", index=False)  # Primera hoja
-    df_2.to_excel(writer, sheet_name="Stiffness_Promedios", index=False)  # Segunda hoja
