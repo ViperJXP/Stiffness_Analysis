@@ -5,5 +5,3 @@ En la primera carpeta "Datos" se encuentran 34 archivos de texto generados por e
 En el caso de Boltzman, hay forma de graficar los potenciales o no.
 # Autores
 -__LFM Josué Hernández Torres___
-
--___M en C. Doralycia Carranza Zúñiga___
