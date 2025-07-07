@@ -4,4 +4,4 @@ En la primera carpeta "Datos" se encuentran 34 archivos de texto generados por e
     2.-Distribución de Boltzmann o Análisis del Potencial de la trampa. 
 En el caso de Boltzman, hay forma de graficar los potenciales o no.
 # Autores
--__LFM Josué Hernández Torres___
+-__LFM Josué Hernández Torres__
